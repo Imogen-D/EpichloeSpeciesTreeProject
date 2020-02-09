@@ -92,8 +92,5 @@ if __name__ == "__main__":
 			sys.exit()	
 	
 
-#currently only getting species with retrieve seqs using one ortho group
-#making fasta files for all orthos
-#only using one fasta file in master script
 
 
