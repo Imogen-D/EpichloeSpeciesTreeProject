@@ -1,108 +1,249 @@
-#load packages
 library(ggplot2)
 library(ggtree)
 library(ape)
 library(phangorn)
 library(rgl)
 library(caTools)
+library(stringr)
+library(tidyr)
+library(XML)
+library("rentrez")
+library(RColorBrewer)
 library(magick)
 
-#class(all_sixteen_tips) <- c("multiPhylo", class(all_sixteen_tips)) #add object class
 
-all_filepath_trees <- list.files("~/Summer Scholarship 2019/EpichloeAll/EpiAllTrees", full.names = TRUE) #filepath to best trees
+#get filepaths to all RAxML bestTree genetrees
+all_filepath_trees <- list.files("DIRECTORY ADDRESS", full.names = TRUE)
 all_read_trees <- lapply(all_filepath_trees, read.tree)
-all_full_tree <- sapply(all_read_trees, Ntip) == 23 #all tips, required for ASTRAL
-all_23_trees <- all_read_trees[all_full_tree]
-class(all_23_trees) <- c("multiPhylo", class(all_23_trees))
+all_full_tree <- sapply(all_read_trees, Ntip) == 24 #all tips, required for ASTRAL
+all_twentyfour_tips <- all_read_trees[all_full_tree]
+class(all_twentyfour_tips) <- c("multiPhylo", class(all_twentyfour_tips))
 class(all_read_trees) <- c("multiPhylo", class(all_read_trees))
-write.tree(all_sixteen_tips, file = "all_full_trees.phy")
-write.tree(all_read_trees, file = "all_trees.phy") #newick format for ASTRAL (use write.nexus for nexus format)
+write.tree(all_twentyfour_tips, file = "all_full_trees.phy")
+write.tree(all_read_trees, file = "all_trees.phy") #newick format for ASTRAL
+
+#all_full_trees.phy is utilised in ASTRAL, windows command prompt. Species map file was used for species tree and outlog produced.
 
 #reinput ASTRAL tree to root + show node confidences
-species_tree <- read.tree("~/Summer Scholarship 2019/EpichloeAll/allspeciestree")
-rooted_tree <- root(species_tree, "gansuensis")
-plot.phylo(rooted_tree, show.tip.label = TRUE, show.node.label = TRUE)
+strain_tree <- read.tree("~/Summer Scholarship 2019/EpichloeAll/FinalDocuments/straintree")
+strain_rooted_tree <- root(strain_tree, "CCE27021")
+plot.phylo(strain_rooted_tree, show.tip.label = TRUE, show.node.label = TRUE) #is exported and saved
+
+species_tree <- read.tree("~/Summer Scholarship 2019/EpichloeAll/FinalDocuments/speciestree") #species tree used species map file
+rooted_tree <- root(species_tree, "C.purpurea")
+plot.phylo(rooted_tree, show.tip.label = TRUE, show.node.label = TRUE) #is exported and saved
 
 #make consensus net
-cnet <- consensusNet(all_sixteen_tips, .2) #change for different relationships
-plot(cnet, "2D", show.edge.label = TRUE)#can show.edge.label =TRUE for clarity
-plot(cnet)
-play3d(spin3d(axis=c(0,1,0), rpm=6), duration=10)
-# create animated gif file - messy at current
-movie3d(spin3d(axis=c(0,1,0), rpm=6), duration=10, dir = "~")
+cnet <- consensusNet(all_twentyfour_tips, .2) #change for different relationships
+plot(cnet, "2D", show.edge.label = FALSE)
+plot(cnet) #exported
 
 #produce dist_topo, see any obvious discrepancies / unpublishable
-dist_topo <- dist.topo(all_sixteen_tips, method = "PH85")
-tree <- upgma(dist_topo)
-plot(tree)
+dist_topo <- dist.topo(all_twentyfour_tips, method = "PH85")
+dist <- upgma(dist_topo)
+plot(dist)
 
 
-
-
-
-
-#orginal graph using trees exactly same as species tree, with no examination with outgroup
-
-unroot_all <- unroot(all_23_trees)
-unroot_species <- unroot(species_tree)
-dist_from_spp_tree <- function(tr, spp_tree = unroot_species){dist.topo(tr, spp_tree)}
-
-D <- sapply(unroot_all, dist_from_spp_tree)
-any(D == 0)
-same_as_spp_best <- D==0
-num_same_best <- which(same_as_spp_best == TRUE)
-
-trees_same_best <- all_23_trees[num_same_best]
-plot(trees_same_best[1])
-
-
-num_full_best <- which(all_full_tree_best == TRUE) #list of number of those trees which are full
-num_tree_best <- num_full_best[num_same_best]
-filepaths_best <- all_filepath_trees[num_tree_best]
-library(stringr)
-og_num_best <- str_extract(string = filepaths_best, pattern = "og_\\d+")
-#only four gene trees match the species tree! og_2010, 2263, 8538, 8671
-
-#A useful pattern!
-#og_num_only <- str_match(string = filepaths_best, pattern = "og_(\\d+)")
-
-
-#now comparing those which are same as gene tree to ones which are different
-#need to compare gene trees which are monophyletic for xxx + KMK to those which are not
-
-bothlabels <- sapply(all_read_trees, function(tr) "C2857" %in% tr$tip.label & "Efe2368" %in% tr$tip.label)
-inclusive <- which(bothlabels == TRUE) #number on gene tree with both labels
-toanalyse <- all_read_trees[inclusive]
-
-monophyly <- sapply(toanalyse, is.monophyletic, tips=c("C2857", "Efe2368"))
-length(which(monophyly==TRUE))
-includedfilepaths <- all_filepath_trees[inclusive]
-og_num_both <- str_extract(string = includedfilepaths, pattern = "og_\\d+")
-negatives <- which(monophyly==FALSE)
-dif_between_festucae <- og_num_both[negatives]
-
-
-#### isolate secodn column from protein ortho long file to use later on in festucae data??
-#just kidding need geneid - second column is gene id ahh
 
 protein_ortho_long <- read.delim("~/Summer Scholarship 2019/EpichloeAll/ortho_long.tsv", header=FALSE, stringsAsFactors=FALSE)
 
-strainC2857 <- subset.data.frame(protein_ortho_long, V3=="C2857")
-includedfilepaths <- all_filepath_trees[inclusive]
-og_num_both <- str_extract(string = includedfilepaths, pattern = "og_\\d+")
+#monophyly studies
+#FESTUCAE
+festlabels <- sapply(all_read_trees, function(tr) "C2857" %in% tr$tip.label & "Efe2368" %in% tr$tip.label)
+festinclusive <- which(festlabels == TRUE) #number on gene tree with both labels
+festtoanalyse <- all_read_trees[festinclusive]
 
-inframe_both <- which(strainC2857$V1 %in% og_num_both)
-C2857genes_both <- strainC2857[c(inframe_both),2]
-write.table(C2857genes_both, quote = FALSE, row.names = FALSE, col.names = FALSE , file = "C2857genes_both.txt")
+festmonophyly <- sapply(festtoanalyse, is.monophyletic, tips=c("C2857", "Efe2368"))
+length(which(festmonophyly==TRUE))
+festincludedfilepaths <- all_filepath_trees[festinclusive]
+festog_num_both <- str_extract(string = festincludedfilepaths, pattern = "og_\\d+")
+festnegatives <- which(festmonophyly==FALSE)
+dif_between_festucae <- festog_num_both[festnegatives]
 
-EALboth <- read.delim("~/Summer Scholarship 2019/Kakapo/EALboth.txt", stringsAsFactors=FALSE)
-indatabase <- which(EALgenes_both %in% EALboth$Protein.stable.ID)
-mono <- monophyly[indatabase]
+festdif_filepaths <- festincludedfilepaths[festnegatives]
+festdifreadtrees <- lapply(festdif_filepaths, read.tree)
+class(festdifreadtrees) <- c("multiPhylo", class(festdifreadtrees))
+TFfullfesttrees <- sapply(festdifreadtrees, Ntip) == 24 
+all_full_fest_trees <- festdifreadtrees[TFfullfesttrees]
+write.tree(festdifreadtrees, file = "festASTRALinput.phy")
 
-EALboth$monophy = mono
-plot <- ggplot(EALboth, aes(Gene.start..bp., Chromosome.scaffold.name))
-points <- plot + geom_jitter(aes(colour = monophy), width = 0, height = 0.1)
-fumigatusgraph <- points + labs(x = "Gene bp start", y = "Chromosome number", title = "A. fumigatus gene locations", colour = "Same as Species Tree")
-scalechange <- fumigatusgraph + scale_x_continuous("Position in chromosome (Mbp)", labels = function(x) x/1e6)
+#ASTRAL, saved as festucaedifferences
 
+fest_tree <- read.tree("~/Summer Scholarship 2019/EpichloeAll/FinalDocuments/festucaedifferences")
+fest_rooted_tree <- root(fest_tree, "CCE27021")
+plot.phylo(fest_rooted_tree, show.tip.label = TRUE, show.node.label = TRUE)
+
+festcnet <- consensusNet(all_full_fest_trees, .2)
+plot(festcnet, "2D", show.edge.label = FALSE)
+
+
+
+
+#BROMICOLA
+bromlabels <- sapply(all_read_trees, function(tr) "EbroNfe1" %in% tr$tip.label & "EbroAL0434" %in% tr$tip.label & "EbroAL0426" %in% tr$tip.label)
+brominclusive <- which(bromlabels == TRUE) #number on gene tree with both labels
+bromtoanalyse <- all_read_trees[brominclusive]
+
+brommonophyly <- sapply(bromtoanalyse, is.monophyletic, tips=c("EbroNfe1", "EbroAL0434", "EbroAL0426"))
+bromincludedfilepaths <- all_filepath_trees[brominclusive]
+bromog_num <- str_extract(string = bromincludedfilepaths, pattern = "og_\\d+")
+bromnegatives <- which(brommonophyly==FALSE)
+dif_between_bromicola <- bromog_num[bromnegatives]
+
+bromdif_filepaths <- bromincludedfilepaths[bromnegatives]
+bromdifreadtrees <- lapply(bromdif_filepaths, read.tree)
+class(bromdifreadtrees) <- c("multiPhylo", class(bromdifreadtrees))
+TFfullbromtrees <- sapply(bromdifreadtrees, Ntip) == 24 
+all_full_brom_trees <- bromdifreadtrees[TFfullbromtrees]
+write.tree(bromdifreadtrees, file = "bromASTRALinput.phy")
+
+#ASTRAL, saved as bromicoladifferences
+                     
+brom_tree <- read.tree("~/Summer Scholarship 2019/EpichloeAll/FinalDocuments/bromicoladifferences")
+brom_rooted_tree <- root(brom_tree, "CCE27021")
+plot.phylo(brom_rooted_tree, show.tip.label = TRUE, show.node.label = TRUE)
+
+bromcnet <- consensusNet(all_full_brom_trees, .2)
+plot(bromcnet, "2D", show.edge.label = FALSE)
+
+
+
+
+#TYPHINA
+typhlabels <- sapply(all_read_trees, function(tr) "E8Q19" %in% tr$tip.label & "E8Q16" %in% tr$tip.label & "Ety8" %in% tr$tip.label)
+typhinclusive <- which(typhlabels == TRUE) #number on gene tree with both labels
+typhtoanalyse <- all_read_trees[typhinclusive]
+
+typhmonophyly <- sapply(typhtoanalyse, is.monophyletic, tips=c("E8Q19", "E8Q16", "Ety8"))
+typhincludedfilepaths <- all_filepath_trees[typhinclusive]
+typhog_num <- str_extract(string = typhincludedfilepaths, pattern = "og_\\d+")
+typhnegatives <- which(typhmonophyly==FALSE)
+dif_between_typhina <- typhog_num[typhnegatives]
+
+typhdif_filepaths <- typhincludedfilepaths[typhnegatives]
+typhdifreadtrees <- lapply(typhdif_filepaths, read.tree)
+class(typhdifreadtrees) <- c("multiPhylo", class(typhdifreadtrees))
+TFfulltyphtrees <- sapply(typhdifreadtrees, Ntip) == 24 
+all_full_typh_trees <- typhdifreadtrees[TFfulltyphtrees]
+write.tree(typhdifreadtrees, file = "typhASTRALinput.phy")
+
+#ASTRAL, saved as bromicoladifferences
+
+typh_tree <- read.tree("~/Summer Scholarship 2019/EpichloeAll/FinalDocuments/typhinadifferences")
+typh_rooted_tree <- root(typh_tree, "CCE27021")
+plot.phylo(typh_rooted_tree, show.tip.label = TRUE, show.node.label = TRUE)
+
+typhcnet <- consensusNet(all_full_typh_trees, .2)
+plot(typhcnet, "2D", show.edge.label = FALSE)
+
+
+#producing metadata heatmaps
+                     
+#SEXUAL REPRODUCTION, SUBTRIBE, GEOGRAPHY
+
+epi_info <- read.csv("~/Summer Scholarship 2019/EpichloeAll/MEtadata/EpichloeTaxaComma.csv") #where csv is knowledge of host species
+names(epi_info)[names(epi_info) == "ï..name"] <- "Species"
+
+unroot_tree <- drop.tip(rooted_tree, "C.purpurea")
+x <- plot(unroot_tree)
+ggtree <- ggtree(unroot_tree)
+joined <- ggtree %<+% epi_info
+x <- joined +
+  geom_tiplab(aes(color = SexualReproduction)) +
+  theme(legend.position = "right")
+  scale_color_brewer(palette = "Set1") +
+  labs(title="Sexual Reproduction in Epichloe")
+par(mar = c(5, 5, 5, 5))
+x
+ggsave("SexualRepro.pdf", width = 50, height = 30, units = "cm", limitsize = FALSE)
+
+
+
+
+
+
+geo_mat <- epi_info[,12:17] #geography
+row.names(geo_mat) <- epi_info$Species
+
+cols= c("darkgrey", "forestgreen")
+gheatmap(x, geo_mat, offset = 1, colnames_angle = 90, colnames_offset_y = -0.5, width = 0.3) + scale_fill_manual(values=cols) + theme(legend.title = element_text()) + labs(fill = "Distribution") + labs(title = "Sexual reproduction and global distribtion of Epichloe")  
+#heatmap of geography
+ggsave("Geo.pdf", width = 50, height = 30, units = "cm", limitsize = FALSE)
+
+
+HostNumber <- str_count(epi_info[,"KnownHostRange"], ",") + 1  #number of hosts
+
+hosts <- read.csv("~/Summer Scholarship 2019/EpichloeAll/MEtadata/EpiHosts.csv")
+
+WideHostGenus <- read.csv("~/Summer Scholarship 2019/EpichloeAll/MEtadata/WideHostGenus.csv", row.names=1, stringsAsFactors=FALSE)
+
+
+class(hosts$Host[[1]])
+taxon_names <- sapply(hosts$Host, rotl::tnrs_match_names)
+planttaxainfo <- as.data.frame(taxon_names)
+
+removed_26flags <- taxon_names[,-26]
+removed_23flags <- removed_26flags[,-23] #ISSUES WITH ROTL TAXON FINDING REMOVED
+id <- as.integer(removed_23flags[4,]) 
+first_tree <- rotl::tol_induced_subtree(ott_ids = id)
+as.character(planttaxainfo[4,])
+
+
+#making heatmap with host Genus
+hostplot <- gheatmap(x, WideHostGenus, offset = 1.5, colnames_angle = 90, colnames_offset_y = -2, color = "black", width = 0.5) + 
+  scale_fill_brewer(palette = "Paired") + 
+  theme(legend.title = element_text()) + 
+  labs(fill = "Host Presence") + 
+  labs(title = "Sexual reproduction and host genera of Epichloe") +
+  geom_tiplab(align=TRUE)  
+
+ggsave("HostsGenusHeatmap.pdf", plot = last_plot(), height = 12, width = 28)
+
+
+Genera <- colnames(WideHostGenus)
+
+get_tribe <- function(Genu){
+  taxon_search <- entrez_search(db="taxonomy", term = Genu)
+  taxon_rec <- entrez_fetch(db="taxonomy", id=taxon_search$ids, rettype="xml", parsed=TRUE)
+  get_taxon(taxon_rec, "tribe")
+}
+
+Genus <- hosts$Host
+tribes <- sapply(Genus, get_tribe)
+
+hosts$tribes = tribes
+
+WideTribe <- read.csv("~/Summer Scholarship 2019/EpichloeAll/MEtadata/WideTribe.csv", row.names=1, stringsAsFactors=FALSE)
+
+
+tribeheatmap <- gheatmap(x, WideTribe, offset = 1.5, colnames_angle = 90, colnames_offset_y = -2, color = "black", width = 0.5) +
+  scale_fill_brewer(palette = "Paired") +
+  theme(legend.title = element_text()) +
+  labs(fill = "Host Presence") +
+  labs(title = "Sexual reproduction and hosts of Epichloe") + 
+  geom_tiplab(align=TRUE)
+ggsave("HostTribeHeatmap.pdf", plot = last_plot(), height = 12, width = 28)
+
+
+#CYCLIC PEPTIDES
+                     
+pa <- read.delim("~/Summer Scholarship 2019/EpichloeAll/MEtadata/pa.csv", header=FALSE, stringsAsFactors=FALSE)
+#CSV describing presence of orthologs
+                     
+unroot_strain_tree <- drop.tip(strain_rooted_tree, "Cpur")
+x <- plot(unroot_strain_tree)
+ggstraintree <- ggtree(unroot_strain_tree)
+joinedpa <- ggstraintree %<+% pa
+y <- joinedpa +
+  geom_tiplab(aes()) +
+  theme(legend.position = "right")
+  scale_color_brewer(palette = "Set1")
+
+
+paspread <- spread(pa, V1, V3)
+rownames(paspread) <- paspread$V2
+paspread$V2 <- NULL
+
+cols= c("darkgrey", "forestgreen")
+gheatmap(y, paspread, offset = 4, colnames_angle = 90, colnames_offset_y = -0.5, width = 1.5) + scale_fill_manual(values=cols) + theme(legend.title = element_text()) + labs(fill = "Distribution")  
 
