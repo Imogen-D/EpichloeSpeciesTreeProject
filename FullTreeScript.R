@@ -13,7 +13,7 @@ library(magick)
 
 
 #get filepaths to all RAxML bestTree genetrees
-all_filepath_trees <- list.files("DIRECTORY ADDRESS", full.names = TRUE)
+all_filepath_trees <- list.files("RAxMLTrees/", full.names = TRUE)
 all_read_trees <- lapply(all_filepath_trees, read.tree)
 all_full_tree <- sapply(all_read_trees, Ntip) == 24 #all tips, required for ASTRAL
 all_twentyfour_tips <- all_read_trees[all_full_tree]
@@ -22,19 +22,23 @@ class(all_read_trees) <- c("multiPhylo", class(all_read_trees))
 write.tree(all_twentyfour_tips, file = "all_full_trees.phy")
 write.tree(all_read_trees, file = "all_trees.phy") #newick format for ASTRAL
 
+#for this code iteration for others
+all_twentyfour_tips <- read.tree("FULLGENETREES") #multiphylo object supplied in repository
+all_full_trees <- read.tree("ALLGENETREES") #multiphylo object supplied in repository
+
 #all_full_trees.phy is utilised in ASTRAL, windows command prompt. Species map file was used for species tree and outlog produced.
 
 #reinput ASTRAL tree to root + show node confidences
-strain_tree <- read.tree("~/Summer Scholarship 2019/EpichloeAll/FinalDocuments/straintree")
+strain_tree <- read.tree("straintree") #supplied in repository
 strain_rooted_tree <- root(strain_tree, "CCE27021")
 plot.phylo(strain_rooted_tree, show.tip.label = TRUE, show.node.label = TRUE) #is exported and saved
 
-species_tree <- read.tree("~/Summer Scholarship 2019/EpichloeAll/FinalDocuments/speciestree") #species tree used species map file
+species_tree <- read.tree("speciestree") #species tree used species map file, supplied in repository
 rooted_tree <- root(species_tree, "C.purpurea")
 plot.phylo(rooted_tree, show.tip.label = TRUE, show.node.label = TRUE) #is exported and saved
 
 #make consensus net
-cnet <- consensusNet(all_twentyfour_tips, .2) #change for different relationships
+cnet <- consensusNet(all_twentyfour_tips, .2)
 plot(cnet, "2D", show.edge.label = FALSE)
 plot(cnet) #exported
 
@@ -45,7 +49,7 @@ plot(dist)
 
 
 
-protein_ortho_long <- read.delim("~/Summer Scholarship 2019/EpichloeAll/ortho_long.tsv", header=FALSE, stringsAsFactors=FALSE)
+protein_ortho_long <- read.delim("ortho_long.tsv", header=FALSE, stringsAsFactors=FALSE)
 
 #monophyly studies
 #FESTUCAE
@@ -69,7 +73,7 @@ write.tree(festdifreadtrees, file = "festASTRALinput.phy")
 
 #ASTRAL, saved as festucaedifferences
 
-fest_tree <- read.tree("~/Summer Scholarship 2019/EpichloeAll/FinalDocuments/festucaedifferences")
+fest_tree <- read.tree("festucaedifferences")
 fest_rooted_tree <- root(fest_tree, "CCE27021")
 plot.phylo(fest_rooted_tree, show.tip.label = TRUE, show.node.label = TRUE)
 
@@ -99,7 +103,7 @@ write.tree(bromdifreadtrees, file = "bromASTRALinput.phy")
 
 #ASTRAL, saved as bromicoladifferences
                      
-brom_tree <- read.tree("~/Summer Scholarship 2019/EpichloeAll/FinalDocuments/bromicoladifferences")
+brom_tree <- read.tree("bromicoladifferences")
 brom_rooted_tree <- root(brom_tree, "CCE27021")
 plot.phylo(brom_rooted_tree, show.tip.label = TRUE, show.node.label = TRUE)
 
@@ -129,7 +133,7 @@ write.tree(typhdifreadtrees, file = "typhASTRALinput.phy")
 
 #ASTRAL, saved as bromicoladifferences
 
-typh_tree <- read.tree("~/Summer Scholarship 2019/EpichloeAll/FinalDocuments/typhinadifferences")
+typh_tree <- read.tree("typhinadifferences")
 typh_rooted_tree <- root(typh_tree, "CCE27021")
 plot.phylo(typh_rooted_tree, show.tip.label = TRUE, show.node.label = TRUE)
 
@@ -141,7 +145,7 @@ plot(typhcnet, "2D", show.edge.label = FALSE)
                      
 #SEXUAL REPRODUCTION, SUBTRIBE, GEOGRAPHY
 
-epi_info <- read.csv("~/Summer Scholarship 2019/EpichloeAll/MEtadata/EpichloeTaxaComma.csv") #where csv is knowledge of host species
+epi_info <- read.csv("EpichloeTaxaComma.csv") #where csv is knowledge of host species
 names(epi_info)[names(epi_info) == "ï..name"] <- "Species"
 
 unroot_tree <- drop.tip(rooted_tree, "C.purpurea")
@@ -173,9 +177,9 @@ ggsave("Geo.pdf", width = 50, height = 30, units = "cm", limitsize = FALSE)
 
 HostNumber <- str_count(epi_info[,"KnownHostRange"], ",") + 1  #number of hosts
 
-hosts <- read.csv("~/Summer Scholarship 2019/EpichloeAll/MEtadata/EpiHosts.csv")
+hosts <- read.csv("EpiHosts.csv")
 
-WideHostGenus <- read.csv("~/Summer Scholarship 2019/EpichloeAll/MEtadata/WideHostGenus.csv", row.names=1, stringsAsFactors=FALSE)
+WideHostGenus <- read.csv("WideHostGenus.csv", row.names=1, stringsAsFactors=FALSE)
 
 
 class(hosts$Host[[1]])
@@ -213,7 +217,7 @@ tribes <- sapply(Genus, get_tribe)
 
 hosts$tribes = tribes
 
-WideTribe <- read.csv("~/Summer Scholarship 2019/EpichloeAll/MEtadata/WideTribe.csv", row.names=1, stringsAsFactors=FALSE)
+WideTribe <- read.csv("WideTribe.csv", row.names=1, stringsAsFactors=FALSE)
 
 
 tribeheatmap <- gheatmap(x, WideTribe, offset = 1.5, colnames_angle = 90, colnames_offset_y = -2, color = "black", width = 0.5) +
@@ -227,7 +231,7 @@ ggsave("HostTribeHeatmap.pdf", plot = last_plot(), height = 12, width = 28)
 
 #CYCLIC PEPTIDES
                      
-pa <- read.delim("~/Summer Scholarship 2019/EpichloeAll/MEtadata/pa.csv", header=FALSE, stringsAsFactors=FALSE)
+pa <- read.delim("pa.csv", header=FALSE, stringsAsFactors=FALSE)
 #CSV describing presence of orthologs
                      
 unroot_strain_tree <- drop.tip(strain_rooted_tree, "Cpur")
