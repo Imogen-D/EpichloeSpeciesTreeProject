@@ -33,7 +33,6 @@ with open('../alignments_stats29.csv', mode = 'w') as align_file:
 			length_total = length_total + dna_length
 			GC_total = GC_total + GC_ratio
 			gap_ratio = sequence.seq.count("-") / float(dna_length)
-			#gap_total = gap_length + gap_total
 			all_dna_lengths.extend([dna_length])
 			all_GC_content.extend([GC_total])
 			all_gap_content.extend([gap_ratio])
