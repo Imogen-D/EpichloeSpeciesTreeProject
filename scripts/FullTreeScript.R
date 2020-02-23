@@ -131,7 +131,7 @@ TFfulltyphtrees <- sapply(typhdifreadtrees, Ntip) == 24
 all_full_typh_trees <- typhdifreadtrees[TFfulltyphtrees]
 write.tree(typhdifreadtrees, file = "typhASTRALinput.phy")
 
-#ASTRAL, saved as bromicoladifferences
+#ASTRAL, saved as typhinadifferences
 
 typh_tree <- read.tree("typhinadifferences")
 typh_rooted_tree <- root(typh_tree, "CCE27021")
