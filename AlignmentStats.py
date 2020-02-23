@@ -1,6 +1,7 @@
 #this code opens iterates through aligned files and creates csv containing number of taxa, GC content, length and gap content
 #averages for all alignments and standard deviations were then produced in RStudio
 
+
 from Bio import SeqIO
 import csv
 import os
@@ -8,9 +9,6 @@ import statistics
 
 from scipy import mean
 from scipy.stats import sem, t
-
-
-confidence = 0.95
 
 
 directory = "."
@@ -27,7 +25,8 @@ with open('../alignments_stats29.csv', mode = 'w') as align_file:
 		all_GC_content = []
 		all_gap_content = []
 		for sequence in record:
-			dna_count = sequence.seq.count("a") + sequence.seq.count("t") + 		sequence.seq.count("g") + sequence.seq.count("c")
+			dna_count = sequence.seq.count("a") + sequence.seq.count("t") + 	
+				sequence.seq.count("g") + sequence.seq.count("c")
 			dna_length = dna_count + sequence.seq.count("-")
 			GC_num = (sequence.seq.count("g") + sequence.seq.count("c"))
 			GC_ratio = GC_num / float(dna_count)
