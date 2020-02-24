@@ -5,7 +5,9 @@ Scripts directory contains all scripts utilised
 
 1. use master.sh with orthologs.py and auto_align.sh to create alignments and trees
 
-2. import trees into R and create species and strain trees using full tree script
+2. check alignments with alignmentstats.py
+
+3. import trees into R and create species and strain trees using fulltreescript.R
 
 This repository will contain code utilised for ortholog analysis, tree production and some graphic representation production.
 
